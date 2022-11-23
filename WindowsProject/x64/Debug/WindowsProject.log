@@ -1,0 +1,20 @@
+﻿  WindowsProject.c
+D:\VSP\WindowsProject\WindowsProject\WindowsProject.c(143,23): warning C4244: =: преобразование "UINT64" в "DWORD", возможна потеря данных
+D:\VSP\WindowsProject\WindowsProject\WindowsProject.c(155,51): warning C4477: "sprintf": в строке форматирования "%08X" требуется аргумент типа "unsigned int", но вариативный аргумент "1" имеет тип "UINT64"
+D:\VSP\WindowsProject\WindowsProject\WindowsProject.c(155,51): message : рекомендуется использовать "%llX" в строке форматирования
+D:\VSP\WindowsProject\WindowsProject\WindowsProject.c(155,51): message : рекомендуется использовать "%IX" в строке форматирования
+D:\VSP\WindowsProject\WindowsProject\WindowsProject.c(155,51): message : рекомендуется использовать "%I64X" в строке форматирования
+D:\VSP\WindowsProject\WindowsProject\WindowsProject.c(212,19): warning C4244: =: преобразование "UINT64" в "int", возможна потеря данных
+D:\VSP\WindowsProject\WindowsProject\WindowsProject.c(244,19): warning C4244: +=: преобразование "double" в "UINT64", возможна потеря данных
+D:\VSP\WindowsProject\WindowsProject\WindowsProject.c(251,18): warning C4244: =: преобразование "UINT64" в "int", возможна потеря данных
+D:\VSP\WindowsProject\WindowsProject\WindowsProject.c(257,36): warning C4047: функция: "WPARAM" отличается по уровням косвенного обращения от "void *"
+D:\VSP\WindowsProject\WindowsProject\WindowsProject.c(257,32): warning C4024: SendMessageW: различные типы для формального и фактического параметров 3
+D:\VSP\WindowsProject\WindowsProject\WindowsProject.c(257,42): warning C4047: функция: "LPARAM" отличается по уровням косвенного обращения от "void *"
+D:\VSP\WindowsProject\WindowsProject\WindowsProject.c(257,38): warning C4024: SendMessageW: различные типы для формального и фактического параметров 4
+D:\VSP\WindowsProject\WindowsProject\WindowsProject.c(296,37): warning C4047: функция: "WPARAM" отличается по уровням косвенного обращения от "void *"
+D:\VSP\WindowsProject\WindowsProject\WindowsProject.c(296,33): warning C4024: SendMessageW: различные типы для формального и фактического параметров 3
+D:\VSP\WindowsProject\WindowsProject\WindowsProject.c(296,43): warning C4047: функция: "LPARAM" отличается по уровням косвенного обращения от "void *"
+D:\VSP\WindowsProject\WindowsProject\WindowsProject.c(296,39): warning C4024: SendMessageW: различные типы для формального и фактического параметров 4
+D:\VSP\WindowsProject\WindowsProject\WindowsProject.c(301,19): warning C4033: "WndPrintProc" должен возвращать значение
+D:\VSP\WindowsProject\WindowsProject\WindowsProject.c(317): warning C4715: WndPrintProc: значение возвращается не при всех путях выполнения
+  WindowsProject.vcxproj -> D:\VSP\WindowsProject\x64\Debug\WindowsProject.exe
