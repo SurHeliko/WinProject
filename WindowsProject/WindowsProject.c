@@ -24,10 +24,10 @@ SYSTEM_INFO sysInfo;
 DWORD dwBytesInBlock;
 DWORD block = 0;
 DWORD blockPrev;
+DWORD maxBlock;
 DWORD bytesLeft;
 
-int page = 30;
-int scale;
+int page = 30, scale, increment = 0;
 
 ATOM                MyRegisterClass(HINSTANCE hInstance);
 ATOM                MyRegisterPrintClass(HINSTANCE hInstance);
@@ -151,9 +151,16 @@ void updateViewOfFile()
 void print(HDC hdc, int localOffset)
 {
 	char buffer[200];
-	int stringCharLen = 0, j = (scale * pos * 16);
-	stringCharLen += sprintf(buffer + stringCharLen, "%08X: ", offset + scale * pos * 16 + localOffset);;
-	for (__int64 i = localOffset + j; i < localOffset + j + 16; i++)
+	int stringCharLen = 0;
+	UINT j = (scale * pos * 16), printOffset = offset + scale * pos * 16 + localOffset;
+	if (printOffset < page * 16 && ((block + 1) - block / maxBlock) % maxBlock == 0)
+		stringCharLen += sprintf(buffer + stringCharLen, "%04X", ((block + 1) - block / maxBlock) / maxBlock);
+	else
+		if (block > maxBlock)
+			stringCharLen += sprintf(buffer + stringCharLen, "%04X", (block - block/maxBlock) / maxBlock);
+		else stringCharLen += sprintf(buffer + stringCharLen, "%04X", 0);
+	stringCharLen += sprintf(buffer + stringCharLen, "%08X: ", offset + scale * pos * 16 + localOffset);
+	for (UINT i = localOffset + j; i < localOffset + j + 16; i++)
 	{
 		if (i < bytesLeft) stringCharLen += sprintf(buffer + stringCharLen, "%02X ", pFileView[i]);
 		else {
@@ -161,7 +168,7 @@ void print(HDC hdc, int localOffset)
 		}
 	}
 	stringCharLen += sprintf(buffer + stringCharLen, " | ");
-	for (__int64 i = localOffset + j; i < localOffset + j + 16; i++)
+	for (UINT i = localOffset + j; i < localOffset + j + 16; i++)
 	{
 		if (i < bytesLeft && isprint(pFileView[i])) stringCharLen += sprintf(buffer + stringCharLen, "%C ", pFileView[i]);
 		else {
@@ -206,6 +213,7 @@ void openFile(HWND hWnd)
 	dwBytesInBlock = sysInfo.dwAllocationGranularity;
 	if (fileSize < sysInfo.dwAllocationGranularity)
 		dwBytesInBlock = (DWORD)fileSize;
+	maxBlock = UINT_MAX / dwBytesInBlock;
 	updateViewOfFile();
 
 	scale = 1;
@@ -231,30 +239,22 @@ void search()
 	DWORD dwSizeHigh;
 	UINT64 i;
 	int n = 0;
-	char buffer[9], buffer2[5] = { '0','0','0','0','\0' }, buffer3[5] = { '0','0','0','0','\0' };
-	GetWindowTextA(hEditSearch, buffer, 9);
-	memcpy(buffer2, buffer, 4);
-	memcpy(buffer3, &buffer[4], 4);
-	dwSizeHigh = strtol(buffer2, NULL, 16);
-	if (buffer3[n] == -52) i = strtol(buffer2, NULL, 16);
-	else {
-		i = strtol(buffer3, NULL, 16);
-		while (buffer3[n] != '\0')
-			n++;
-		i += dwSizeHigh * (pow(16, n));
-	}
+	char buffer[13];
+	GetWindowTextA(hEditSearch, buffer, 13);
+	i = _strtoui64(buffer, NULL, 16, NULL);
 
 	if (i > fileSize) {
 		SetWindowTextW(hEditSearch, L"ERROR");
 		return;
 	}
-	scrInfo.nPos = i/16;
+	scrInfo.nPos = i / 16;
 	pos = scrInfo.nPos;
 	block = pos / (dwBytesInBlock / 16);
 	pos = pos - dwBytesInBlock * block / 16;
 	SetScrollInfo(hPrint, SB_VERT, &scrInfo, TRUE);
 	updateViewOfFile();
-	SendMessage(hPrint, WM_PAINT, NULL, NULL);
+	UpdateWindow(hPrint);
+	//SendMessage(hPrint, WM_PAINT, NULL, NULL);
 }
 
 LRESULT CALLBACK WndPrintProc(HWND hPrint, UINT message, WPARAM wParam, LPARAM lParam)
@@ -272,14 +272,21 @@ LRESULT CALLBACK WndPrintProc(HWND hPrint, UINT message, WPARAM wParam, LPARAM l
 			pos = scrInfo.nPos;
 			block = pos / (dwBytesInBlock / 16);
 			pos = pos - dwBytesInBlock * block / 16;
+			SetScrollInfo(hPrint, SB_VERT, &scrInfo, TRUE);
+			updateViewOfFile();
+			UpdateWindow(hPrint);
 		}
 		break;
 		case SB_LINEDOWN:
 		{
+			if (scrInfo.nPos < scrInfo.nMax)
 			scrInfo.nPos += 1;
 			pos = scrInfo.nPos;
 			block = pos / (dwBytesInBlock / 16);
 			pos = pos - dwBytesInBlock * block / 16;
+			SetScrollInfo(hPrint, SB_VERT, &scrInfo, TRUE);
+			updateViewOfFile();
+			UpdateWindow(hPrint);
 		}
 		break;
 		case SB_THUMBTRACK:
@@ -288,12 +295,12 @@ LRESULT CALLBACK WndPrintProc(HWND hPrint, UINT message, WPARAM wParam, LPARAM l
 			pos = scrInfo.nPos;
 			block = pos / (dwBytesInBlock / 16);
 			pos = pos - dwBytesInBlock * block / 16;
+			SetScrollInfo(hPrint, SB_VERT, &scrInfo, TRUE);
+			updateViewOfFile();
+			UpdateWindow(hPrint);
 		}
 		break;
 		}
-		SetScrollInfo(hPrint, SB_VERT, &scrInfo, TRUE);
-		updateViewOfFile();
-		SendMessage(hPrint, WM_PAINT, NULL, NULL);
 	}
 	break;
 	case WM_PAINT:
@@ -304,7 +311,7 @@ LRESULT CALLBACK WndPrintProc(HWND hPrint, UINT message, WPARAM wParam, LPARAM l
 		int localOffset = 0;
 		for (int i = 0; i < page; i++)
 		{
-			if (localOffset + pos < fileSize) print(hdc, localOffset);
+			print(hdc, localOffset);
 			localOffset += 16;
 		}
 		ReleaseDC(hPrint, hdc);
@@ -372,7 +379,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			openFile(hWnd);
 			break;
 		case IDM_ABOUT:
-			DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
+			MessageBox(hWnd,L"Чтобы открыть файл надо нажать кнопку \"Открыть\" и выбрать нужный файл.\nЧтобы сделать поиск по смещению надо ввести смещение (например 1FFDE0) и нажать \"Найти\"",
+				L"Справка", MB_OK);
 			break;
 		case IDM_EXIT:
 			DestroyWindow(hWnd);
@@ -393,23 +401,4 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		return DefWindowProc(hWnd, message, wParam, lParam);
 	}
 	return 0;
-}
-
-INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
-{
-	UNREFERENCED_PARAMETER(lParam);
-	switch (message)
-	{
-	case WM_INITDIALOG:
-		return (INT_PTR)TRUE;
-
-	case WM_COMMAND:
-		if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL)
-		{
-			EndDialog(hDlg, LOWORD(wParam));
-			return (INT_PTR)TRUE;
-		}
-		break;
-	}
-	return (INT_PTR)FALSE;
 }
